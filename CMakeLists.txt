@@ -17,8 +17,8 @@ find_package(Qt6 COMPONENTS
 add_executable(InternshipTracker main.cpp
         src/mainwindow.cpp
         include/mainwindow.h
-        internshiptable.cpp
-        internshiptable.h)
+        src/internshiptable.cpp
+        include/internshiptable.h)
 target_link_libraries(InternshipTracker
         Qt::Core
         Qt::Gui
