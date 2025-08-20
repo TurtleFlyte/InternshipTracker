@@ -3,8 +3,9 @@
 
 #pragma once
 #include <QTableWidget>
+#include <QJsonArray>
 
-class InternshipTable : QWidget {
+class InternshipTable : public QWidget {
     Q_OBJECT
 public:
     explicit InternshipTable(QWidget *parent = nullptr);

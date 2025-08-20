@@ -29,15 +29,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), network(new QNetw
     layout->addLayout(buttonLayout);
 
     // Setup table
-    table = new QTableWidget(0, 5, this);
-    table->setHorizontalHeaderLabels({"ID", "Name", "Link", "Status", "App Cycle"});
-    table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    table->setColumnHidden(0, true); // Hide id column
-    table->setCornerButtonEnabled(false);
-    table->verticalHeader()->setVisible(false); // Hide row numbers
-    table->horizontalHeader()->setMaximumSectionSize(400);
-    table->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    table = new InternshipTable();
     layout->addWidget(table);
 
     central->setLayout(layout);
@@ -62,22 +54,8 @@ void MainWindow::onReplyFinished(QNetworkReply *reply) {
 
     if(doc.isObject()){
         QJsonArray arr = doc.object()["table"].toArray();
-        updateTable(arr);
+        table->updateTable(arr);
     }
-}
-
-void MainWindow::updateTable(const QJsonArray &rows) {
-    table->setRowCount(rows.size());
-
-    for (int i = 0; i < rows.size(); ++i) {
-        auto obj = rows[i].toObject();
-        table->setItem(i,0, new QTableWidgetItem(obj["id"].toInt()));
-        table->setItem(i,1, new QTableWidgetItem(obj["name"].toString()));
-        table->setItem(i,2, new QTableWidgetItem(obj["link"].toString()));
-        table->setItem(i,3, new QTableWidgetItem(obj["status"].toString()));
-        table->setItem(i,4, new QTableWidgetItem(obj["appCycle"].toString()));
-    }
-    table->resizeColumnsToContents();
 }
 
 QString MainWindow::getApiUrl() {
