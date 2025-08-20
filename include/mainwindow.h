@@ -4,6 +4,7 @@
 #define INTERNSHIPTRACKER_MAINWINDOW_H
 
 #include "internshiptable.h"
+#include "internshipapimanager.h"
 #include <QMainWindow>
 #include <QTableWidget>
 #include <QtNetwork/QNetworkAccessManager>
@@ -14,19 +15,15 @@
 class MainWindow : public QMainWindow{
     Q_OBJECT
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
 private:
     InternshipTable *table;
+    InternshipApiManager *apiManager;
 
-    QNetworkAccessManager *network;
-    QString apiURL;
     QPushButton *addButton, *editButton, *deleteButton;
 
 private slots:
-    void fetchInternships();
-    void onReplyFinished(QNetworkReply *reply);
-
-    QString getApiUrl();
+    void onInternshipsFetched(const QJsonArray &tableArr);
 };
 
 

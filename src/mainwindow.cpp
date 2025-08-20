@@ -9,8 +9,9 @@
 #include <QScreen>
 #include <QSettings>
 #include <QMessageBox>
+#include <QNetworkAccessManager>
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), network(new QNetworkAccessManager(this)){
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), apiManager(new InternshipApiManager(this)){
     QWidget *central = new QWidget;
     QVBoxLayout *layout = new QVBoxLayout;
     QHBoxLayout *buttonLayout = new QHBoxLayout;
@@ -29,41 +30,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), network(new QNetw
     layout->addLayout(buttonLayout);
 
     // Setup table
-    table = new InternshipTable();
+    table = new InternshipTable(this);
     layout->addWidget(table);
 
     central->setLayout(layout);
     setCentralWidget(central);
     resize(1280, 720);
 
-    apiURL = getApiUrl();
-    connect(network, &QNetworkAccessManager::finished, this, &MainWindow::onReplyFinished);
+    connect(apiManager, &InternshipApiManager::internshipsFetched, this, &MainWindow::onInternshipsFetched);
 
-    fetchInternships();
+    apiManager->fetchInternships();
 }
 
-void MainWindow::fetchInternships() {
-    QNetworkRequest request((QUrl(apiURL)));
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    network->get(request);
-}
-
-void MainWindow::onReplyFinished(QNetworkReply *reply) {
-    QByteArray response = reply->readAll();
-    QJsonDocument doc = QJsonDocument::fromJson(response);
-
-    if(doc.isObject()){
-        QJsonArray arr = doc.object()["table"].toArray();
-        table->updateTable(arr);
-    }
-}
-
-QString MainWindow::getApiUrl() {
-    QString settingsFile = "api_config.ini";
-    QSettings settings(settingsFile, QSettings::IniFormat);
-    QString url = settings.value("API/api_url", "").toString();
-    if (url.isEmpty()) {
-        QMessageBox::warning(nullptr, "Error", "API URL not found in api_config.ini!");
-    }
-    return url;
+void MainWindow::onInternshipsFetched(const QJsonArray &tableArr){
+    table->updateTable(tableArr);
 }
