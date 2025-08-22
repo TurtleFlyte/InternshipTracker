@@ -10,9 +10,14 @@ class InternshipApiManager : public QObject{
 public:
     explicit InternshipApiManager(QObject *parent = nullptr);
     void fetchInternships();
+    void addInternship(const QJsonObject &data);
+    void deleteInternship(const QJsonObject &data);
 
 signals:
     void internshipsFetched(const QJsonArray &tableArr);
+    void internshipAdded();
+    void internshipDeleted();
+    void errorOccurred(const QString &err);
 
 private slots:
     void onReplyFinished(QNetworkReply *reply);
@@ -20,6 +25,9 @@ private slots:
 private:
     QNetworkAccessManager *network;
     QString apiUrl;
+
+    enum class RequestType {Get, Post, Put, Delete};
+    QHash<QNetworkReply*, RequestType> pendingRequests;
 
     QString getApiUrl();
 };

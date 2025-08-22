@@ -10,6 +10,8 @@ class InternshipTable : public QWidget {
 public:
     explicit InternshipTable(QWidget *parent = nullptr);
     void updateTable(const QJsonArray &rows);
+    int getSelectedRow();
+    int getSelectedId();
 
 private:
     QTableWidget *table;

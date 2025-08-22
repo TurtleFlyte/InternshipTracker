@@ -5,7 +5,7 @@
 #include <QJsonObject>
 
 InternshipApiManager::InternshipApiManager(QObject *parent) : QObject(parent), network(new QNetworkAccessManager){
-    connect(network, &QNetworkAccessManager::finished, this, &InternshipApiManager::onReplyFinished);
+    connect(network, &QNetworkAccessManager::finished, this, &InternshipApiManager::onReplyFinished); // Connect db response parsing to finished signal
 
     apiUrl = getApiUrl();
 }
@@ -13,16 +13,74 @@ InternshipApiManager::InternshipApiManager(QObject *parent) : QObject(parent), n
 void InternshipApiManager::fetchInternships(){
     QNetworkRequest request((QUrl(apiUrl)));
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    network->get(request);
+    QNetworkReply *reply = network->get(request);
+    pendingRequests[reply] = RequestType::Get;
+}
+
+void InternshipApiManager::addInternship(const QJsonObject &data) {
+    QNetworkRequest request((QUrl(apiUrl)));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    QByteArray body = QJsonDocument(data).toJson();
+    QNetworkReply *reply = network->post(request, body);
+    pendingRequests[reply] = RequestType::Post;
+}
+
+void InternshipApiManager::deleteInternship(const QJsonObject &data) {
+    QNetworkRequest request((QUrl(apiUrl)));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    QByteArray body = QJsonDocument(data).toJson();
+    QNetworkReply *reply = network->sendCustomRequest(request, "DELETE", body);
+    pendingRequests[reply] = RequestType::Delete;
 }
 
 void InternshipApiManager::onReplyFinished(QNetworkReply *reply){
-    QByteArray response = reply->readAll();
-    QJsonDocument doc = QJsonDocument::fromJson(response);
+    auto it = pendingRequests.find(reply); // Get iterator to request type
+    if(it == pendingRequests.end()){ // Delete reply if request type does not exist
+        reply->deleteLater();
+        return;
+    }
 
-    if(doc.isObject()){
-        QJsonArray arr = doc.object()["table"].toArray();
-        emit internshipsFetched(arr);
+    RequestType requestType = *it;
+    pendingRequests.erase(it);
+
+    if(reply->error() != QNetworkReply::NoError){
+        QString err = reply->errorString();
+        emit errorOccurred(err);
+        reply->deleteLater();
+        return;
+    }
+
+    QByteArray response = reply->readAll();
+    reply->deleteLater();
+
+    QJsonParseError jsonError;
+    QJsonDocument doc = QJsonDocument::fromJson(response, &jsonError);
+    if(jsonError.error != QJsonParseError::NoError){
+        emit errorOccurred("JSON parse error: " + jsonError.errorString());
+        return;
+    }
+
+    QJsonObject obj = doc.object();
+
+    switch (requestType) {
+        case RequestType::Get:{
+            QJsonArray arr = doc.object()["table"].toArray();
+            emit internshipsFetched(arr);
+            break;
+        }
+        case RequestType::Post:{
+//            int newId = obj["id"].toInt(-1);
+            emit internshipAdded();
+            break;
+        }
+        case RequestType::Put:{
+
+            break;
+        }
+        case RequestType::Delete:{
+            emit internshipDeleted();
+            break;
+        }
     }
 }
 

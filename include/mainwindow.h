@@ -24,6 +24,11 @@ private:
 
 private slots:
     void onInternshipsFetched(const QJsonArray &tableArr);
+    void onErrorOccurred(const QString &err);
+    void fetchInternships();
+
+    void onAddClicked();
+    void onDeleteClicked();
 };
 
 

@@ -7,14 +7,15 @@
 #include <QtCore/qjsonobject.h>
 #include <QGuiApplication>
 #include <QScreen>
-#include <QSettings>
 #include <QMessageBox>
-#include <QNetworkAccessManager>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QLabel>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), apiManager(new InternshipApiManager(this)){
-    QWidget *central = new QWidget;
-    QVBoxLayout *layout = new QVBoxLayout;
-    QHBoxLayout *buttonLayout = new QHBoxLayout;
+    auto *central = new QWidget;
+    auto *layout = new QVBoxLayout;
+    auto *buttonLayout = new QHBoxLayout;
 
     // Setup buttons
     addButton = new QPushButton("Add");
@@ -37,11 +38,69 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), apiManager(new In
     setCentralWidget(central);
     resize(1280, 720);
 
-    connect(apiManager, &InternshipApiManager::internshipsFetched, this, &MainWindow::onInternshipsFetched);
+    connect(apiManager, &InternshipApiManager::internshipsFetched, this, &MainWindow::onInternshipsFetched); // Connect api manager signal to main window
+    connect(addButton, &QPushButton::clicked, this, &MainWindow::onAddClicked);
+    connect(deleteButton, &QPushButton::clicked, this, &MainWindow::onDeleteClicked);
+
+    connect(apiManager, &InternshipApiManager::errorOccurred, this, &MainWindow::onErrorOccurred);
+    connect(apiManager, &InternshipApiManager::internshipAdded, this, &MainWindow::fetchInternships);
+    connect(apiManager, &InternshipApiManager::internshipDeleted, this, &MainWindow::fetchInternships);
 
     apiManager->fetchInternships();
 }
 
 void MainWindow::onInternshipsFetched(const QJsonArray &tableArr){
     table->updateTable(tableArr);
+}
+
+void MainWindow::fetchInternships() {
+    apiManager->fetchInternships();
+}
+
+void MainWindow::onErrorOccurred(const QString &err) {
+    QMessageBox::critical(this, "Network error: ", err);
+}
+
+void MainWindow::onAddClicked() {
+    QDialog addDialog(this);
+    QVBoxLayout addDialogLayout(&addDialog);
+    QLineEdit name, link, appCycle;
+    QComboBox status;
+    status.addItems({"Seen", "Applied", "Ghosted", "Rejected", "Interview", "Offer"});
+    addDialogLayout.addWidget(new QLabel("Add a New Internship"));
+    addDialogLayout.addWidget(new QLabel("Name:")); addDialogLayout.addWidget(&name);
+    addDialogLayout.addWidget(new QLabel("Link:")); addDialogLayout.addWidget(&link);
+    addDialogLayout.addWidget(new QLabel("Application Status:")); addDialogLayout.addWidget(&status);
+    addDialogLayout.addWidget(new QLabel("Application Cycle:")); addDialogLayout.addWidget(&appCycle);
+
+    QPushButton okay("OK"), cancel("Cancel");
+    QHBoxLayout buttonLayout;
+    buttonLayout.addWidget(&cancel);
+    buttonLayout.addWidget(&okay);
+    addDialogLayout.addLayout(&buttonLayout);
+
+    connect(&cancel, &QPushButton::clicked, &addDialog, &QDialog::reject);
+    connect(&okay, &QPushButton::clicked, &addDialog, &QDialog::accept);
+
+    if(addDialog.exec() == QDialog::Accepted){
+        QJsonObject object;
+        object["name"] = name.text();
+        object["link"] = link.text();
+        object["status"] = status.currentText();
+        object["appCycle"] = appCycle.text();
+
+        apiManager->addInternship(object);
+    }
+}
+
+void MainWindow::onDeleteClicked() {
+    if(table->getSelectedRow() == -1) {
+        QMessageBox::warning(this, "Table error: ", "No Internship Selected");
+        return;
+    }
+    int id = table->getSelectedId();
+    QJsonObject object;
+    object["id"] = id;
+    if(QMessageBox::question(this, "Delete Internship", "Are you sure?") == QMessageBox::Yes)
+        apiManager->deleteInternship(object);
 }
