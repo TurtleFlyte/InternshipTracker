@@ -20,7 +20,7 @@ private:
     InternshipTable *table;
     InternshipApiManager *apiManager;
 
-    QPushButton *addButton, *editButton, *deleteButton;
+    QPushButton *addButton, *deleteButton;
 
 private slots:
     void onInternshipsFetched(const QJsonArray &tableArr);

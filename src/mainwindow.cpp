@@ -35,11 +35,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), apiManager(new In
     setCentralWidget(central);
     resize(1280, 720);
 
-    connect(apiManager, &InternshipApiManager::internshipsFetched, this, &MainWindow::onInternshipsFetched); // Connect api manager signal to main window
+    // Setup connections
     connect(addButton, &QPushButton::clicked, this, &MainWindow::onAddClicked);
     connect(deleteButton, &QPushButton::clicked, this, &MainWindow::onDeleteClicked);
     connect(table, &InternshipTable::internshipEdited, this, &MainWindow::onTableItemChanged);
 
+    connect(apiManager, &InternshipApiManager::internshipsFetched, this, &MainWindow::onInternshipsFetched); // Connect api manager signal to main window
     connect(apiManager, &InternshipApiManager::errorOccurred, this, &MainWindow::onErrorOccurred);
     connect(apiManager, &InternshipApiManager::internshipAdded, this, &MainWindow::fetchInternships);
     connect(apiManager, &InternshipApiManager::internshipDeleted, this, &MainWindow::fetchInternships);

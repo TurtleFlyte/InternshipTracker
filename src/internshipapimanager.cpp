@@ -77,7 +77,6 @@ void InternshipApiManager::onReplyFinished(QNetworkReply *reply){
             break;
         }
         case RequestType::Post:{
-//            int newId = obj["id"].toInt(-1);
             emit internshipAdded();
             break;
         }
