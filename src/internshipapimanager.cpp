@@ -33,6 +33,14 @@ void InternshipApiManager::deleteInternship(const QJsonObject &data) {
     pendingRequests[reply] = RequestType::Delete;
 }
 
+void InternshipApiManager::editInternship(const QJsonObject &data) {
+    QNetworkRequest request((QUrl(apiUrl)));
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    QByteArray body = QJsonDocument(data).toJson();
+    QNetworkReply *reply = network->sendCustomRequest(request, "PUT", body);
+    pendingRequests[reply] = RequestType::Put;
+}
+
 void InternshipApiManager::onReplyFinished(QNetworkReply *reply){
     auto it = pendingRequests.find(reply); // Get iterator to request type
     if(it == pendingRequests.end()){ // Delete reply if request type does not exist
@@ -74,7 +82,8 @@ void InternshipApiManager::onReplyFinished(QNetworkReply *reply){
             break;
         }
         case RequestType::Put:{
-
+            int editedId = obj["id"].toInt(-1);
+            emit internshipEdited(editedId);
             break;
         }
         case RequestType::Delete:{

@@ -1,7 +1,7 @@
-#pragma once
-
 #ifndef INTERNSHIPTRACKER_MAINWINDOW_H
 #define INTERNSHIPTRACKER_MAINWINDOW_H
+
+#pragma once
 
 #include "internshiptable.h"
 #include "internshipapimanager.h"
@@ -25,6 +25,8 @@ private:
 private slots:
     void onInternshipsFetched(const QJsonArray &tableArr);
     void onErrorOccurred(const QString &err);
+    void onTableItemChanged(const QJsonObject &data);
+    void onCloudTableEdited(int id);
     void fetchInternships();
 
     void onAddClicked();

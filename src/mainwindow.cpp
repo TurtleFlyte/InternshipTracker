@@ -19,13 +19,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), apiManager(new In
 
     // Setup buttons
     addButton = new QPushButton("Add");
-    editButton = new QPushButton("Edit");
     deleteButton = new QPushButton("Delete");
     addButton->setFixedWidth(100);
-    editButton->setFixedWidth(100);
     deleteButton->setFixedWidth(100);
     buttonLayout->addWidget(addButton);
-    buttonLayout->addWidget(editButton);
     buttonLayout->addWidget(deleteButton);
     buttonLayout->setAlignment(Qt::AlignLeft);
     layout->addLayout(buttonLayout);
@@ -41,16 +38,20 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), apiManager(new In
     connect(apiManager, &InternshipApiManager::internshipsFetched, this, &MainWindow::onInternshipsFetched); // Connect api manager signal to main window
     connect(addButton, &QPushButton::clicked, this, &MainWindow::onAddClicked);
     connect(deleteButton, &QPushButton::clicked, this, &MainWindow::onDeleteClicked);
+    connect(table, &InternshipTable::internshipEdited, this, &MainWindow::onTableItemChanged);
 
     connect(apiManager, &InternshipApiManager::errorOccurred, this, &MainWindow::onErrorOccurred);
     connect(apiManager, &InternshipApiManager::internshipAdded, this, &MainWindow::fetchInternships);
     connect(apiManager, &InternshipApiManager::internshipDeleted, this, &MainWindow::fetchInternships);
+    connect(apiManager, &InternshipApiManager::internshipEdited, this, &MainWindow::onCloudTableEdited);
 
     apiManager->fetchInternships();
 }
 
 void MainWindow::onInternshipsFetched(const QJsonArray &tableArr){
     table->updateTable(tableArr);
+
+    table->enableTableEditing(true);
 }
 
 void MainWindow::fetchInternships() {
@@ -91,6 +92,8 @@ void MainWindow::onAddClicked() {
 
         apiManager->addInternship(object);
     }
+
+    table->enableTableEditing(false);
 }
 
 void MainWindow::onDeleteClicked() {
@@ -103,4 +106,16 @@ void MainWindow::onDeleteClicked() {
     object["id"] = id;
     if(QMessageBox::question(this, "Delete Internship", "Are you sure?") == QMessageBox::Yes)
         apiManager->deleteInternship(object);
+
+    table->enableTableEditing(false);
+}
+
+void MainWindow::onTableItemChanged(const QJsonObject &data) {
+    apiManager->editInternship(data);
+
+    table->enableTableEditing(false);
+}
+
+void MainWindow::onCloudTableEdited(int id) {
+    table->enableTableEditing(true);
 }

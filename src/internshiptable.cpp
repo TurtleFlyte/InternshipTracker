@@ -18,12 +18,15 @@ InternshipTable::InternshipTable(QWidget *parent) : QWidget(parent){
     table->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     table->setSelectionMode(QAbstractItemView::SingleSelection);
 
+    connect(table, &QTableWidget::itemChanged, this, &InternshipTable::onInternshipEdited);
+
     auto layout = new QVBoxLayout(this);
     layout->addWidget(table);
     setLayout(layout);
 }
 
 void InternshipTable::updateTable(const QJsonArray &rows) {
+    table->blockSignals(true);
     table->clearContents();
     table->setRowCount(rows.size());
 
@@ -34,14 +37,28 @@ void InternshipTable::updateTable(const QJsonArray &rows) {
         table->setItem(i,0, new QTableWidgetItem(QString::number(obj["id"].toInt())));
         table->setItem(i,1, new QTableWidgetItem(obj["name"].toString()));
         table->setItem(i,2, new QTableWidgetItem(obj["link"].toString()));
+
         auto *statusCombo = new QComboBox;
         statusCombo->addItems(statusOptions);
         int statusIndex = statusOptions.indexOf(obj["status"].toString());
         statusCombo->setCurrentIndex(statusIndex >= 0 ? statusIndex : 0);
         table->setCellWidget(i,3, statusCombo);
+        connect(statusCombo, &QComboBox::currentTextChanged, this,
+                [this, i](const QString &newStatus){
+            QJsonObject object;
+            object["id"] = table->item(i, 0)->text().toInt();
+            object["name"] = table->item(i, 1)->text();
+            object["link"] = table->item(i, 2)->text();
+            object["status"] = newStatus;
+            object["appCycle"] = table->item(i, 4)->text();
+
+            emit internshipEdited(object);
+        });
+
         table->setItem(i,4, new QTableWidgetItem(obj["appCycle"].toString()));
     }
     table->resizeColumnsToContents();
+    table->blockSignals(false);
 }
 
 int InternshipTable::getSelectedRow() {
@@ -50,4 +67,26 @@ int InternshipTable::getSelectedRow() {
 
 int InternshipTable::getSelectedId() {
     return table->item(getSelectedRow(),0)->text().toInt();
+}
+
+void InternshipTable::onInternshipEdited(QTableWidgetItem *item) {
+    if(!item) return;
+
+    QJsonObject object;
+    int r = item->row();
+    object["id"] = table->item(r, 0)->text().toInt();
+    object["name"] = table->item(r, 1)->text();
+    object["link"] = table->item(r, 2)->text();
+    auto* status = qobject_cast<QComboBox*>(table->cellWidget(r, 3));
+    object["status"] = status->currentText();
+    object["appCycle"] = table->item(r, 4)->text();
+
+    emit internshipEdited(object);
+}
+
+void InternshipTable::enableTableEditing(bool enabled) {
+    if(enabled)
+        table->setEditTriggers(QAbstractItemView::DoubleClicked);
+    else
+        table->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
